@@ -8,7 +8,9 @@
 
 import binascii, struct, itertools, logging
 
+
 # functions to use from package
+
 
 __all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 'u64', 'p', 'p8', 'p16', 'p32', 'p64', 'e', 'E']
 
@@ -32,7 +34,9 @@ hexdump = lambda value, columns = 8 : b'\n'.join([b' '.join([b' ' * 2 if a is No
 
 # parsing functions
 
-
+'''
+converts any type to bytes
+'''
 def to_bytes(value, endian = 'big', encoding = 'utf-8'):
     if isinstance(value, bytearray):
         return bytes(value)
@@ -54,8 +58,14 @@ def to_bytes(value, endian = 'big', encoding = 'utf-8'):
 
 # packing functions
 
-
+'''
+converts 'little' -> '<' and 'big' -> '>'
+'''
 e = lambda endian : ('<' if endian.strip().lower() in ['<', 'little'] else '>')
+
+'''
+converts '<' -> 'little' and '>' -> 'big'
+'''
 E = lambda endian : ('little' if endian.strip().lower() in ['<', 'little'] else 'big')
 
 ul = lambda n : lambda x, endian = '>' : struct.unpack(e(endian) + n, bytes(smartbytes(x)))[0]
@@ -71,7 +81,14 @@ p16 = pl('H')
 p32 = pl('I')
 p64 = pl('Q')
 
+'''
+unpacks any type to int
+'''
 u = lambda data, endian = 'big', signed = False : int.from_bytes(bytes(to_bytes(data)), byteorder = endian, signed = signed)
+
+'''
+packs any type to smartbytes
+'''
 p = lambda n, size = None, endian = 'big', signed = False : smartbytes(n.to_bytes(((n.bit_length() // 8) + 1 if size is None else size), byteorder = endian, signed = signed))
 
 
