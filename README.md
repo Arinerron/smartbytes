@@ -2,6 +2,8 @@
 
 smartbytes makes byte parsing not painful
 
+\*[insert *I can't believe it's not Python 2!* on image](https://images-na.ssl-images-amazon.com/images/G/01/aplusautomation/vendorimages/4bc3e8fe-4c6e-4b72-a676-57a4f0aeb3eb.jpg._CB527652977_.jpg)\*
+
 # Installation
 
 The only requirement for smartbytes is any version of `python3`.
@@ -18,6 +20,12 @@ sudo python3 setup.py install
 Coming soon.
 
 # Examples
+
+**_tl;dr_** smartbytes makes it so that
+* you can use normal string functions on bytes
+* packing and unpacking is easy
+* it is trivial to encode/decode in hex
+* you can parse bytes in chunks rather than one byte at a time
 
 ```
 >>> from smartbytes import *
