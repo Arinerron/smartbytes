@@ -6,7 +6,7 @@
 # License: MIT (see LICENSE.md)
 
 
-import binascii, struct, itertools, logging
+import sys, binascii, struct, itertools, logging
 
 
 # functions to use from package
