@@ -6,21 +6,34 @@
 # License: MIT (see LICENSE.md)
 
 
-import binascii, struct, itertools
+import binascii, struct, itertools, logging
+
+# functions to use from package
 
 __all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 'u64', 'p', 'p8', 'p16', 'p32', 'p64', 'e', 'E']
 
-# debug functions
+
+# setup logging
+
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+# encoding functions
+
 
 hexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.hexlify(to_bytes(x, endian = endian, encoding = encoding))
 unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
 
 hexdump = lambda value, columns = 8 : b'\n'.join([b' '.join([b' ' * 2 if a is None else hexify(bytes([a])).rjust(2, b'0') for a in x]) for x in map(lambda *c : tuple(c), *(itertools.chain(iter(to_bytes(value)), [None] * (columns - 1)),) * columns)]).decode() # sorry about this, it was just a challenge for myself
 
+
 # parsing functions
 
+
 def to_bytes(value, endian = 'big', encoding = 'utf-8'):
-    # print('got %s as type, %s as val' % (str(type(value)), str(value)))
     if isinstance(value, bytearray):
         return bytes(value)
     elif isinstance(value, bytes):
@@ -34,9 +47,13 @@ def to_bytes(value, endian = 'big', encoding = 'utf-8'):
     elif '__iter__' in dir(value):
         return b''.join([to_bytes(x) for x in value])
 
-    print(type(value))
+    log.warning('warning: cannot convert value %s of type %s to bytes' % (str(value), type(value)))
 
     raise TypeError
+
+
+# packing functions
+
 
 e = lambda endian : ('<' if endian.strip().lower() in ['<', 'little'] else '>')
 E = lambda endian : ('little' if endian.strip().lower() in ['<', 'little'] else 'big')
