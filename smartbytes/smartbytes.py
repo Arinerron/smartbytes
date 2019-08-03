@@ -282,10 +282,10 @@ class smartbytes:
     def rfind(self, char, fi = None, ei = None):
         return self.get_contents().rfind(self._to_bytes(char), fi, ei)
 
-    def split(self, char, count):
+    def split(self, char, count = -1):
         return [smartbytes(x) for x in self.get_contents().split(self._to_bytes(char), count)]
 
-    def rsplit(self, char, count):
+    def rsplit(self, char, count = -1):
         return [smartbytes(x) for x in self.get_contents().rsplit(self._to_bytes(char), count)]
 
     def partition(self, char):
