@@ -18,6 +18,7 @@ __all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 
 # setup logging
 
 
+# XXX: should we add this by default?
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -183,6 +184,18 @@ class smartbytes:
     def add(self, value, encoding = 'utf-8'):
         return smartbytes(self).append(value, encoding = encoding)
 
+    def __mul__(self, value):
+        try:
+            return smartbytes(self.get_contents() * value)
+        except TypeError as e:
+            raise e
+
+    def __rmul__(self, value):
+        return self.__mul__(value)
+    
+    def multiply(self, value):
+        return self.__mul__(value)
+
     def _to_bytes(self, value, endian = 'big', encoding = 'utf-8'):
         if isinstance(value, smartbytes):
             return value.get_contents()
@@ -201,6 +214,9 @@ class smartbytes:
 
     def get_contents(self):
         return self.contents
+    
+    def encode(self, *args, **kwargs):
+        return to_bytes(self, *args, **kwargs)
 
     def decode(self, encoding = 'utf-8'):
         return self.__str__(encoding = encoding)
@@ -307,5 +323,17 @@ class smartbytes:
     def __reversed__(self):
         return smartbytes(reversed(self.get_contents()))
 
-    def __getitem__(self, key):
-        return smartbytes(self.get_contents().__getitem__(key))
+    def reverse(self):
+        return self.__reversed__()
+
+    def find(self, key, *args, **kwargs):
+        key = smartbytes(key)
+        return self.get_contents().find(key.get_contents(), *args, **kwargs)
+
+    def __getitem__(self, key, *args, **kwargs):
+        try:
+            # try as int
+            return smartbytes(self.get_contents().__getitem__(key, *args, **kwargs))
+        except TypeError:
+            # ok, we're searching
+            return self.find(key, *args, **kwargs)

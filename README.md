@@ -6,13 +6,21 @@ smartbytes makes byte parsing not painful
 
 # Installation
 
+## PyPi
+
+```
+# pip3 install smartbytes
+```
+
+## Manual
+
 The only requirement for smartbytes is any version of `python3`.
 
 ```
-git clone https://github.com/Arinerron/smartbytes.git
-cd smartbytes
+$ git clone https://github.com/Arinerron/smartbytes.git
+$ cd smartbytes
 
-sudo python3 setup.py install
+# sudo python3 setup.py install
 ```
 
 # Documentation
@@ -45,6 +53,12 @@ b'hello world'
 >>> smartbytes(0x41) + 'A' + b'A' + 0x41
 b'AAAA'
 
+>>> with open('/usr/lib/libc-2.31.so', 'rb') as f:
+...     contents = f.read()
+... 
+>>> smartbytes(contents)['/bin/sh\x00'] # find offset of /bin/sh string in libc
+1618243
+
 >>> smartbytes(range(10))
 b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t'
 
@@ -53,6 +67,9 @@ b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\x00\x01\x02\x03\x04\x05\x06\x07\x08\t'
 
 >>> str(smartbytes(range(10)))
 '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t'
+
+>>> smartbytes([(2,3),4],[5,(((3,5),),)])
+b'\x02\x03\x04\x05\x03\x05'
 
 >>> smartbytes(range(20)).hex()
 b'000102030405060708090a0b0c0d0e0f10111213'
@@ -79,4 +96,18 @@ b'\x01#E'
 
 >>> p(0x1234567890)
 b'\x124Vx\x90'
+```
+
+smartbytes also works with pwntools!
+
+```
+>>> from smartbytes import *
+>>> from pwn import *
+>>> p = process('cat')
+[x] Starting local process '/usr/bin/cat'
+[+] Starting local process '/usr/bin/cat': pid 1470268
+>>> line = smartbytes(b'robert', 0x20, 'is') + 0x20 + b'an' + smartbytes(' ', 'arch', 0x20, 'user btw')
+>>> line
+b'robert is an arch user btw'
+>>> p.sendline(line)
 ```
