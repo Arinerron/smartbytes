@@ -8,8 +8,8 @@ def readme():
         return f.read()
 
 setup(name = 'smartbytes',
-      version = '1.2',
-      description = 'makes bytes less painful',
+      version = '1.3',
+      description = 'makes bytes in Python significantly less painful',
       long_description = readme(),
       long_description_content_type="text/markdown",
       author = 'Aaron Esau',
