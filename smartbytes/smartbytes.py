@@ -6,7 +6,7 @@
 # License: MIT (see LICENSE.md)
 
 
-import sys, binascii, struct, itertools, logging
+import sys, binascii, struct, itertools, logging, string
 
 
 # functions to use from package
@@ -27,7 +27,16 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 # encoding functions
 
 
-hexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.hexlify(to_bytes(x, endian = endian, encoding = encoding))
+def hexify(x, endian = 'big', encoding = None):
+    if not encoding:
+        f = lambda y : y
+        if E(endian) == 'little':
+            f = reversed
+
+        return smartbytes(''.join(f([hex(x)[2:].zfill(2) for x in to_bytes(x)]))).get_content()
+    else:
+        return binascii.hexlify(to_bytes(x, endian = endian, encoding = encoding))
+
 unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
 
 hexdump = lambda value, columns = 8 : b'\n'.join([b' '.join([b' ' * 2 if a is None else hexify(bytes([a])).rjust(2, b'0') for a in x]) for x in map(lambda *c : tuple(c), *(itertools.chain(iter(to_bytes(value)), [None] * (columns - 1)),) * columns)]).decode() # sorry about this, it was just a challenge for myself
@@ -90,7 +99,10 @@ u = lambda data, endian = 'big', signed = False : int.from_bytes(bytes(to_bytes(
 '''
 packs any type to smartbytes
 '''
-p = lambda n, size = None, endian = 'big', signed = False : smartbytes(n.to_bytes(((n.bit_length() // 8) + 1 if size is None else size), byteorder = endian, signed = signed))
+# p = lambda n, size = None, endian = 'big', signed = False : smartbytes(n.to_bytes(((n.bit_length() // 8) + 1 if size is None else size), byteorder = endian, signed = signed))
+p = lambda n, size = None, endian = 'big', signed = False : smartbytes(n.to_bytes((
+    (((n.bit_length() - 1) // 8) + 1 if n != 0 else 1)
+if size is None else size), byteorder = endian, signed = signed))
 
 
 # smartbytes classes
@@ -167,8 +179,10 @@ class smartbytesiter:
         return self.index
 
 
-class smartbytes:
+class smartbytes(str):
     def __init__(self, *contents):
+        super(str, self).__init__()
+
         if isinstance(contents, tuple):
             contents = list(contents)
         if len(contents) == 1:
@@ -218,11 +232,14 @@ class smartbytes:
     def encode(self, *args, **kwargs):
         return to_bytes(self, *args, **kwargs)
 
-    def decode(self, encoding = 'utf-8'):
+    def decode(self, encoding = None):
         return self.__str__(encoding = encoding)
 
-    def __str__(self, encoding = 'utf-8'):
-        return self.get_contents().decode(encoding = encoding)
+    def __str__(self, encoding = None):
+        if encoding:
+            return self.get_contents().decode(encoding = encoding)
+        else:
+            return ''.join(chr(x) for x in self.get_contents())
 
     def __bytes__(self):
         return self.get_contents()
@@ -236,11 +253,36 @@ class smartbytes:
     def __eq__(self, value):
         return self.get_contents() == smartbytes(value).get_contents()
 
-    def hexdump(self, columns = 8):
-        return hexdump(self.get_contents(), columns)
+    def hexdump(self, columns = 16, content = True):
+        build = smartbytes()
+        tmp = smartbytes()
+
+        for i in range(len(self)):
+            build += self[i].hex()
+            tmp += self[i]
+
+            if columns and (i + 1) % columns == 0:
+                if content:
+                    build += b'    '
+                    build += ''.join([str(x) if (str(x) in string.printable and not str(x) in '\t\n\r\x0b\x0c') else '.' for x in tmp])
+                    tmp = smartbytes()
+
+                build += b'\n'
+            else:
+                build += b' '
+
+        if tmp and content:
+            build += b'   ' * (columns - len(tmp)) + b'   '
+            build += tmp
+
+
+        return build
 
     def hex(self):
-        return hexify(self.get_contents())
+        return smartbytes(hexify(self.get_contents()))
+
+    def unhex(self):
+        return smartbytes(unhexify(self.get_contents()))
 
     def human(self):
         return self.__human__()
@@ -271,18 +313,6 @@ class smartbytes:
     def rjust(self, amount, char = b'\x00'):
         return smartbytes(self).get_contents().rjust(amount, self._to_bytes(char))
     
-    def lstrip(self, char = b'\x00'):
-        return smartbytes(self).get_contents().lstrip(self._to_bytes(char))
-
-    def rstrip(self, char = b'\x00'):
-        return smartbytes(self).get_contents().rstrip(self._to_bytes(char))
-
-    def strip(self, char = b'\x00'):
-        return self.rstrip(char).lstrip(char)
-
-    def zfill(self, amount):
-        return self.rjust(amount, 0)
-
     def startswith(self, prefix):
         return self.get_contents().startswith(self._to_bytes(prefix))
 
@@ -291,12 +321,6 @@ class smartbytes:
 
     def replace(self, char, withchar, count = -1):
         return smartbytes(self).get_contents().replace(self._to_bytes(char), self._to_bytes(withchar), count)
-
-    def find(self, char, fi = None, ei = None):
-        return self.get_contents().find(self._to_bytes(char), fi, ei)
-
-    def rfind(self, char, fi = None, ei = None):
-        return self.get_contents().rfind(self._to_bytes(char), fi, ei)
 
     def split(self, char, count = -1):
         return [smartbytes(x) for x in self.get_contents().split(self._to_bytes(char), count)]
@@ -330,6 +354,11 @@ class smartbytes:
         key = smartbytes(key)
         return self.get_contents().find(key.get_contents(), *args, **kwargs)
 
+    def rfind(self, key, *args, **kwargs):
+        key = smartbytes(key)
+        return self.get_contents().find(key.get_contents(), *args, **kwargs)
+
+
     def __getitem__(self, key, *args, **kwargs):
         try:
             # try as int
@@ -337,3 +366,24 @@ class smartbytes:
         except TypeError:
             # ok, we're searching
             return self.find(key, *args, **kwargs)
+
+
+# override some common str functions
+# XXX: this only works for functions which only take str/bytes args
+
+attrs = [
+    'title',
+    'lower',
+    'upper',
+    'translate',
+    'zfill',
+    'strip',
+    'lstrip',
+    'rstrip'
+]
+
+for attr in attrs:
+    attr_func = lambda *args, **kwargs : smartbytes(getattr(str, attr)(*args, **kwargs))
+    setattr(smartbytes, attr, attr_func)
+
+del attrs
