@@ -86,6 +86,67 @@ b'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526
 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f    PQRSTUVWXYZ[\]^_
 60 61 62 63                                        `abc
 
+# any operation you can do on a str or bytes object, you can do on a smartbytes object too
+
+>>> value = smartbytes('hello world')
+
+>>> value.reverse()
+b'dlrow olleh'
+
+>>> value.upper()
+b'hello world'
+
+>>> value.ljust(20)
+b'hello world\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+>>> value.rjust(20)
+b'\x00\x00\x00\x00\x00\x00\x00\x00\x00hello world'
+
+>>> value.split(' ')
+[b'hello', b'world']
+
+>>> value.endswith('world')
+True
+
+>>> value.startswith(b'hello')
+True
+
+>>> value.contains(0x20) # 0x20 is the ' ' character!
+True
+
+>>> 0x20 in value
+True
+
+>>> value[1]
+b'e'
+
+>>> value['e']
+1
+
+>>> len(value)
+11
+
+# ...with even more functionality than both str and bytes!
+
+>>> value.chunks(2)
+[b'he', b'll', b'o ', b'wo', b'rl', b'd']
+
+>>> value.chunks(4)
+[b'hell', b'o wo', b'rld']
+
+# you can also append many types to it and it will handle it properly
+
+>>> value = smartbytes()
+>>> value += 'hello'
+>>> value += 0x20
+>>> value += b'world'
+>>> value += smartbytes('!')
+>>> value
+b'hello world!'
+
+>>> value*4
+b'hello world!hello world!hello world!hello world!'
+
 # it comes with pwntools-like packing functions
 # NOTE: endianness can be specified using kwarg endian (e.g. endian='big')
 
@@ -114,7 +175,6 @@ b'\xde\xad\xbe\xef'
 >>> from smartbytes import *
 >>> from pwn import *
 >>> p = process('cat')
-[x] Starting local process '/usr/bin/cat'
 [+] Starting local process '/usr/bin/cat': pid 1470268
 >>> line = smartbytes(b'robert', 0x20, 'is') + 0x20 + b'an' + smartbytes(' ', 'arch', 0x20, 'user btw')
 >>> line
