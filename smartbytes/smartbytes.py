@@ -305,6 +305,15 @@ class smartbytes(str):
         except StopIteration:
             return build
 
+    def chunks(self, chunk_size):
+        return [self[i:i+chunk_size] for i in range(0, len(self), chunk_size)]
+
+    def as_chunks(self, chunk_size):
+        return self.chunks(chunk_size)
+
+    def chunkify(self, chunk_size):
+        return self.chunkify(chunk_size)
+
     # string-like operations
 
     def ljust(self, amount, char = b'\x00'):

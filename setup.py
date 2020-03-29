@@ -8,7 +8,7 @@ def readme():
         return f.read()
 
 setup(name = 'smartbytes',
-      version = '1.3',
+      version = '1.4',
       description = 'makes bytes in Python significantly less painful',
       long_description = readme(),
       long_description_content_type="text/markdown",
