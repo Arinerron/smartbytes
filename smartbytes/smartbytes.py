@@ -181,8 +181,6 @@ class smartbytesiter:
 
 class smartbytes(str):
     def __init__(self, *contents):
-        super(str, self).__init__()
-
         if isinstance(contents, tuple):
             contents = list(contents)
         if len(contents) == 1:
@@ -317,10 +315,13 @@ class smartbytes(str):
     # string-like operations
 
     def ljust(self, amount, char = b'\x00'):
-        return smartbytes(self).get_contents().ljust(amount, self._to_bytes(char))
+        return smartbytes(self.get_contents().ljust(amount, self._to_bytes(char)))
 
     def rjust(self, amount, char = b'\x00'):
-        return smartbytes(self).get_contents().rjust(amount, self._to_bytes(char))
+        return smartbytes(self.get_contents().rjust(amount, self._to_bytes(char)))
+
+    def zfill(self, length):
+        return smartbytes(self.get_contents().rjust(length, '0'))
     
     def startswith(self, prefix):
         return self.get_contents().startswith(self._to_bytes(prefix))
@@ -329,7 +330,7 @@ class smartbytes(str):
         return self.get_contents().endswith(self._to_bytes(suffix))
 
     def replace(self, char, withchar, count = -1):
-        return smartbytes(self).get_contents().replace(self._to_bytes(char), self._to_bytes(withchar), count)
+        return smartbytes(self.get_contents().replace(self._to_bytes(char), self._to_bytes(withchar), count))
 
     def split(self, char, count = -1):
         return [smartbytes(x) for x in self.get_contents().split(self._to_bytes(char), count)]
@@ -343,6 +344,24 @@ class smartbytes(str):
     def rpartition(self, char):
         return tuple(self.rsplit(char, 1))
 
+    def upper(self):
+        return smartbytes(self.get_contents().upper())
+    
+    def lower(self):
+        return smartbytes(self.get_contents().lower())
+
+    def title(self):
+        return smartbytes(self.get_contents().title())
+
+    def strip(self, *kargs):
+        return smartbytes(self.get_contents().strip(*kargs))
+
+    def lstrip(self, *kargs):
+        return smartbytes(self.get_contents().lstrip(*kargs))
+
+    def rstrip(self, *kargs):
+        return smartbytes(self.get_contents().rstrip(*kargs))
+
     # iterating the array
 
     def __iter__(self):
@@ -352,6 +371,12 @@ class smartbytes(str):
 
     def __len__(self):
         return len(self.get_contents())
+
+    def __contains__(self, key):
+        return self[smartbytes(key)] != -1
+
+    def contains(self, key):
+        return key in self
 
     def __reversed__(self):
         return smartbytes(reversed(self.get_contents()))
@@ -367,7 +392,6 @@ class smartbytes(str):
         key = smartbytes(key)
         return self.get_contents().find(key.get_contents(), *args, **kwargs)
 
-
     def __getitem__(self, key, *args, **kwargs):
         try:
             # try as int
@@ -376,23 +400,3 @@ class smartbytes(str):
             # ok, we're searching
             return self.find(key, *args, **kwargs)
 
-
-# override some common str functions
-# XXX: this only works for functions which only take str/bytes args
-
-attrs = [
-    'title',
-    'lower',
-    'upper',
-    'translate',
-    'zfill',
-    'strip',
-    'lstrip',
-    'rstrip'
-]
-
-for attr in attrs:
-    attr_func = lambda *args, **kwargs : smartbytes(getattr(str, attr)(*args, **kwargs))
-    setattr(smartbytes, attr, attr_func)
-
-del attrs
