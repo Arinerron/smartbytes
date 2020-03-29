@@ -39,10 +39,9 @@ def hexify(x, endian = 'big', encoding = None):
 
 unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
 
-hexdump = lambda value, columns = 8 : b'\n'.join([b' '.join([b' ' * 2 if a is None else hexify(bytes([a])).rjust(2, b'0') for a in x]) for x in map(lambda *c : tuple(c), *(itertools.chain(iter(to_bytes(value)), [None] * (columns - 1)),) * columns)]).decode() # sorry about this, it was just a challenge for myself
-
 
 # parsing functions
+
 
 '''
 converts any type to bytes
@@ -277,7 +276,10 @@ class smartbytes(str):
         return build
 
     def hex(self):
-        return smartbytes(hexify(self.get_contents()))
+        retval = hexify(self.get_contents())
+        if len(retval) % 2: # 0 pad
+            return smartbytes('0', retval)
+        return smartbytes(retval)
 
     def unhex(self):
         return smartbytes(unhexify(self.get_contents()))
