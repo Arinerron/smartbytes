@@ -6,13 +6,20 @@
 # License: MIT (see LICENSE.md)
 
 
-import sys, binascii, struct, itertools, logging, string
+import sys, binascii, struct, itertools, logging, string, builtins
 
 
 # functions to use from package
 
 
-__all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 'u64', 'p', 'p8', 'p16', 'p32', 'p64', 'e', 'E']
+__all__ = ['smartbytes', 'smartbytesiter', 'to_bytes', 'u', 'u8', 'u16', 'u32', 'u64', 'p', 'p8', 'p16', 'p32', 'p64', 'e', 'E', 'sb']
+
+
+# in case builtins gets overriden, we want the object as an alternate name
+
+
+_bytes = bytes
+_str = str
 
 
 # setup logging
@@ -37,7 +44,7 @@ def hexify(x, endian = 'big', encoding = None):
     else:
         return binascii.hexlify(to_bytes(x, endian = endian, encoding = encoding))
 
-unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
+unhexify = lambda x, endian = 'big', encoding = 'latin1' : binascii.unhexlify(to_bytes(x, endian = endian, encoding = encoding))
 
 
 # parsing functions
@@ -46,21 +53,21 @@ unhexify = lambda x, endian = 'big', encoding = 'utf-8' : binascii.unhexlify(to_
 '''
 converts any type to bytes
 '''
-def to_bytes(value, endian = 'big', encoding = 'utf-8'):
+def to_bytes(value, endian = 'big', encoding = 'latin1'):
     if isinstance(value, bytearray):
         return bytes(value)
-    elif isinstance(value, bytes):
+    elif isinstance(value, _bytes):
         return value
     elif isinstance(value, smartbytes):
         return value.get_contents()
-    elif isinstance(value, str):
+    elif isinstance(value, _str):
         return value.encode(encoding)
     elif isinstance(value, int):
-        return bytes(p(value, endian = endian, signed = False))
+        return _bytes(p(value, endian = endian, signed = False))
     elif '__iter__' in dir(value):
         return b''.join([to_bytes(x) for x in value])
 
-    log.warning('warning: cannot convert value %s of type %s to bytes' % (str(value), type(value)))
+    log.warning('warning: cannot convert value %s of type %s to bytes' % (_str(value), type(value)))
 
     raise TypeError
 
@@ -77,7 +84,7 @@ converts '<' -> 'little' and '>' -> 'big'
 '''
 E = lambda endian : ('little' if endian.strip().lower() in ['<', 'little'] else 'big')
 
-ul = lambda n : lambda x, endian = '>' : struct.unpack(e(endian) + n, bytes(smartbytes(x)))[0]
+ul = lambda n : lambda x, endian = '>' : struct.unpack(e(endian) + n, _bytes(smartbytes(x)))[0]
 pl = lambda n : lambda x, endian = '>' : smartbytes(struct.pack(e(endian) + n, x))
 
 u8 = ul('b')
@@ -93,7 +100,7 @@ p64 = pl('Q')
 '''
 unpacks any type to int
 '''
-u = lambda data, endian = 'big', signed = False : int.from_bytes(bytes(to_bytes(data)), byteorder = endian, signed = signed)
+u = lambda data, endian = 'big', signed = False : int.from_bytes(_bytes(to_bytes(data)), byteorder = endian, signed = signed)
 
 '''
 packs any type to smartbytes
@@ -178,8 +185,11 @@ class smartbytesiter:
         return self.index
 
 
-class smartbytes(str):
-    def __init__(self, *contents):
+class smartbytes(_bytes):
+    def __new__(cls, *args, **kwargs):
+        return _bytes.__new__(cls)
+
+    def __init__(self, *contents, **kwargs):
         if isinstance(contents, tuple):
             contents = list(contents)
         if len(contents) == 1:
@@ -192,7 +202,7 @@ class smartbytes(str):
     def __add__(self, value):
         return smartbytes(self).add(value)
 
-    def add(self, value, encoding = 'utf-8'):
+    def add(self, value, encoding = 'latin1'):
         return smartbytes(self).append(value, encoding = encoding)
 
     def __mul__(self, value):
@@ -207,13 +217,13 @@ class smartbytes(str):
     def multiply(self, value):
         return self.__mul__(value)
 
-    def _to_bytes(self, value, endian = 'big', encoding = 'utf-8'):
+    def _to_bytes(self, value, endian = 'big', encoding = 'latin1'):
         if isinstance(value, smartbytes):
             return value.get_contents()
 
         return to_bytes(value, endian = endian, encoding = encoding)
 
-    def append(self, value, encoding = 'utf-8'):
+    def append(self, value, encoding = 'latin1'):
         self.contents += self._to_bytes(value, encoding = encoding)
 
         return self
@@ -242,10 +252,10 @@ class smartbytes(str):
         return self.get_contents()
 
     def __human__(self):
-        return str(bytes(self))[1:]
+        return _str(_bytes(self))[1:]
 
     def __repr__(self):
-        return self.get_contents().__repr__()
+        return 'sb' + self.get_contents().__repr__()[1:]
 
     def __eq__(self, value):
         return self.get_contents() == smartbytes(value).get_contents()
@@ -261,7 +271,7 @@ class smartbytes(str):
             if columns and (i + 1) % columns == 0:
                 if content:
                     build += b'    '
-                    build += ''.join([str(x) if (str(x) in string.printable and not str(x) in '\t\n\r\x0b\x0c') else '.' for x in tmp])
+                    build += ''.join([_str(x) if (_str(x) in string.printable and not _str(x) in '\t\n\r\x0b\x0c') else '.' for x in tmp])
                     tmp = smartbytes()
 
                 build += b'\n'
@@ -401,4 +411,17 @@ class smartbytes(str):
         except TypeError:
             # ok, we're searching
             return self.find(key, *args, **kwargs)
+
+
+# shorthand
+
+
+sb = smartbytes
+
+#builtins.bytes = sb
+# although this does work ^ and is cool, it will break code:
+# >>> bytes('adsf', 234234)
+# sb'adsf\x03\x92\xfa'
+# >>> bytes('asdf', 'utf-8')
+# sb'asdfutf-8'
 
