@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# 
+#
 # smartbytes: makes parsing bytes ez
-# 
+#
 # Author: Aaron Esau <python@aaronesau.com>
 # License: MIT (see LICENSE.md)
 
 
-import sys, binascii, struct, itertools, logging, string, builtins
+import sys, binascii, struct, itertools, logging, string, builtins, base64
 
 
 # functions to use from package
@@ -176,7 +176,7 @@ class smartbytesiter:
         return retval
 
     # misc functions
-    
+
     def set_index(self, index):
         self.index = index
         return self
@@ -213,7 +213,7 @@ class smartbytes(_bytes):
 
     def __rmul__(self, value):
         return self.__mul__(value)
-    
+
     def multiply(self, value):
         return self.__mul__(value)
 
@@ -235,7 +235,7 @@ class smartbytes(_bytes):
 
     def get_contents(self):
         return self.contents
-    
+
     def encode(self, *args, **kwargs):
         return to_bytes(self, *args, **kwargs)
 
@@ -285,14 +285,23 @@ class smartbytes(_bytes):
 
         return build
 
-    def hex(self):
+    def hex(self, zero_pad = True):
         retval = hexify(self.get_contents())
-        if len(retval) % 2: # 0 pad
+        if zero_pad and len(retval) % 2: # 0 pad
             return smartbytes('0', retval)
         return smartbytes(retval)
 
     def unhex(self):
-        return smartbytes(unhexify(self.get_contents()))
+        val = self.get_contents()
+        if len(val) % 2 != 0:
+            val = b'0' + val
+        return smartbytes(unhexify(val))
+
+    def base64(self):
+        return smartbytes(base64.b64encode(self.get_contents()))
+
+    def unbase64(self):
+        return smartbytes(base64.b64decode(self.get_contents()))
 
     def human(self):
         return self.__human__()
@@ -334,7 +343,7 @@ class smartbytes(_bytes):
 
     def zfill(self, length):
         return smartbytes(self.get_contents().rjust(length, '0'))
-    
+
     def startswith(self, prefix):
         return self.get_contents().startswith(self._to_bytes(prefix))
 
@@ -358,7 +367,7 @@ class smartbytes(_bytes):
 
     def upper(self):
         return smartbytes(self.get_contents().upper())
-    
+
     def lower(self):
         return smartbytes(self.get_contents().lower())
 
@@ -378,7 +387,10 @@ class smartbytes(_bytes):
 
     def __iter__(self):
         return smartbytesiter(self)
-    
+
+    def iter(self):
+        return self.__iter__()
+
     # misc operations
 
     def __len__(self):
@@ -412,6 +424,16 @@ class smartbytes(_bytes):
             # ok, we're searching
             return self.find(key, *args, **kwargs)
 
+    def __setitem__(self, key, value, length = None):
+        try:
+            self.contents = bytes(self[0:key] + smartbytes(value) + self[key+1+(0 if length == None else length):len(self)])
+        except TypeError:
+            # find the string (let's assume it's one) and replace at that index instead
+            self.__setitem__(self[key], value, length = (len(key) if length == None else length))
+
+    def insert(self, key, value, length = -1):
+        self.__setitem__(key, value, length = length)
+
 
 # shorthand
 
@@ -424,4 +446,3 @@ sb = smartbytes
 # sb'adsf\x03\x92\xfa'
 # >>> bytes('asdf', 'utf-8')
 # sb'asdfutf-8'
-
