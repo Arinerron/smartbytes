@@ -242,6 +242,45 @@ class smartbytes(_bytes):
     def decode(self, encoding = None):
         return self.__str__(encoding = encoding)
 
+    def bytes(self, **kwargs):
+        return bytes(self, **kwargs)
+
+    def as_bytes(self, **kwargs):
+        return self.bytes(**kwargs)
+
+    def to_bytes(self, **kwargs):
+        return self.bytes(**kwargs)
+
+    def str(self, **kwargs):
+        return str(self, **kwargs)
+
+    def as_str(self, **kwargs):
+        return self.str(**kwargs)
+
+    def to_str(self, **kwargs):
+        return self.str(**kwargs)
+
+    def as_human(self):
+        return self.human()
+
+    def to_human(self):
+        return self.human()
+
+    def as_hexdump(self, *args, **kwargs):
+        return self.hexdump(*args, **kwargs)
+
+    def to_hexdump(self, *args, **kwargs):
+        return self.hexdump(*args, **kwargs)
+
+    def repr(self):
+        return repr(self)
+
+    def as_repr(self):
+        return self.repr()
+
+    def to_repr(self):
+        return self.repr()
+
     def __str__(self, encoding = None):
         if encoding:
             return self.get_contents().decode(encoding = encoding)
@@ -420,10 +459,6 @@ class smartbytes(_bytes):
         return self.get_contents().find(key.get_contents(), *args, **kwargs)
 
     def __getitem__(self, key, *args, **kwargs):
-        print(key)
-        print(args)
-        print(kwargs)
-
         try:
             # try as int
             return smartbytes(self.get_contents().__getitem__(key, *args, **kwargs))
