@@ -285,8 +285,8 @@ class smartbytes(_bytes):
 
         return build
 
-    def hex(self, zero_pad = True):
-        retval = hexify(self.get_contents())
+    def hex(self, endian = 'big', zero_pad = True):
+        retval = hexify(self.get_contents(), endian = endian)
         if zero_pad and len(retval) % 2: # 0 pad
             return smartbytes('0', retval)
         return smartbytes(retval)
@@ -353,6 +353,9 @@ class smartbytes(_bytes):
     def replace(self, char, withchar, count = -1):
         return smartbytes(self.get_contents().replace(self._to_bytes(char), self._to_bytes(withchar), count))
 
+    def remove(self, char, count = -1):
+        return self.replace(char, '', count = count)
+
     def split(self, char, count = -1):
         return [smartbytes(x) for x in self.get_contents().split(self._to_bytes(char), count)]
 
@@ -417,6 +420,10 @@ class smartbytes(_bytes):
         return self.get_contents().find(key.get_contents(), *args, **kwargs)
 
     def __getitem__(self, key, *args, **kwargs):
+        print(key)
+        print(args)
+        print(kwargs)
+
         try:
             # try as int
             return smartbytes(self.get_contents().__getitem__(key, *args, **kwargs))
