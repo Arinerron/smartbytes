@@ -363,11 +363,16 @@ class smartbytes(_bytes):
         except StopIteration:
             return build
 
-    def chunks(self, chunk_size):
-        return [self[i:i+chunk_size] for i in range(0, len(self), chunk_size)]
+    def chunks(self, chunk_size, join_with = None):
+        chunks = [self[i:i+chunk_size] for i in range(0, len(self), chunk_size)]
 
-    def as_chunks(self, chunk_size):
-        return self.chunks(chunk_size)
+        if join_with == None:
+            return chunks
+        else:
+            return smartbytes(join_with).join(chunks)
+
+    def as_chunks(self, *args, **kwargs):
+        return self.chunks(*args, **kwargs)
 
     def chunkify(self, chunk_size):
         return self.chunkify(chunk_size)
